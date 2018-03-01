@@ -89,125 +89,127 @@ public class QuestionDetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_question_detail);
 
-        // 渡ってきたQuestionのオブジェクトを保持する
-        Bundle extras = getIntent().getExtras();
-        mQuestion = (Question) extras.get("question");
-        mQNum = (String) mQuestion.getQnum();
+            // 渡ってきたQuestionのオブジェクトを保持する
+            Bundle extras = getIntent().getExtras();
+            mQuestion = (Question) extras.get("question");
+            mQNum = (String) mQuestion.getQnum();
 
-        mDataBaseReference = FirebaseDatabase.getInstance().getReference();
-        mAuth = FirebaseAuth.getInstance();
-        FirebaseUser user = mAuth.getCurrentUser();
+            mDataBaseReference = FirebaseDatabase.getInstance().getReference();
+            mAuth = FirebaseAuth.getInstance();
+            FirebaseUser user = mAuth.getCurrentUser();
 
-        if (user == null) {
-            // ログインしていなければログイン画面に遷移させる
-            Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
-            startActivity(intent);
-        }else {
+            if (user == null) {
+                Button FavButton = (Button) findViewById(R.id.favoriteButton);
+                FavButton.setVisibility(View.INVISIBLE);
+            } else {
 
-            mFavList = new ArrayList<String>();
-            mFavs = "";
+                Button FavButton = (Button) findViewById(R.id.favoriteButton);
+                FavButton.setVisibility(View.VISIBLE);
 
-            DatabaseReference userRef = mDataBaseReference.child(Const.UsersPATH).child(user.getUid());
-            userRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot snapshot) {
-                    Map data = (Map) snapshot.getValue();
-                    mFavs = (String) data.get("favList");
-                    if (mFavs != null) {
-                        if (mFavs.indexOf(",") != -1) {
-                            String[] temp = mFavs.split(",");
-                            for (int i = 0; i < temp.length; i++) {
-                                mFavList.add(temp[i]);
-                            }
-                        } else {
-                            mFavList.add(mFavs);
-                        }
+                mFavList = new ArrayList<String>();
+                mFavs = "";
 
-                    }
-
-                    fav = favCheck(mFavList, mQNum);
-                    Button FavButton = (Button) findViewById(R.id.favoriteButton);
-                    if (fav == true) {
-                        FavButton.setBackgroundColor(Color.YELLOW);
-                    } else {
-                        FavButton.setBackgroundColor(Color.GRAY);
-                    }
-                    FavButton.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            if (fav == true) {
-                                fav = false;
-                                v.setBackgroundColor(Color.GRAY);
-                                // favListから削除
-                                mFavList.remove(mFavList.indexOf(mQNum));
+                DatabaseReference userRef = mDataBaseReference.child(Const.UsersPATH).child(user.getUid());
+                userRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot snapshot) {
+                        Map data = (Map) snapshot.getValue();
+                        mFavs = (String) data.get("favList");
+                        if (mFavs != null) {
+                            if (mFavs.indexOf(",") != -1) {
+                                String[] temp = mFavs.split(",");
+                                for (int i = 0; i < temp.length; i++) {
+                                    mFavList.add(temp[i]);
+                                }
                             } else {
-                                fav = true;
-                                v.setBackgroundColor(Color.YELLOW);
-                                // favListに追加
-                                if (mFavList == null) mFavList = new ArrayList<String>();
-                                mFavList.add(mQNum);
-
-                            }
-                            // favList更新
-                            mDataBaseReference = FirebaseDatabase.getInstance().getReference();
-                            mAuth = FirebaseAuth.getInstance();
-                            FirebaseUser user = mAuth.getCurrentUser();
-                            DatabaseReference userRef = mDataBaseReference.child(Const.UsersPATH).child(user.getUid());
-                            Map<String, String> data = new HashMap<String, String>();
-                            String temp = "";
-                            for (int i = 0; i < mFavList.size(); i++) {
-                                temp = temp + mFavList.get(i);
-                                if (i != mFavList.size() - 1) temp = temp + ",";
+                                mFavList.add(mFavs);
                             }
 
-                            data.put("favList", temp);
-                            userRef.setValue(data);
                         }
-                    });
 
-                }
+                        fav = favCheck(mFavList, mQNum);
+                        Button FavButton = (Button) findViewById(R.id.favoriteButton);
+                        if (fav == true) {
+                            FavButton.setBackgroundColor(Color.YELLOW);
+                        } else {
+                            FavButton.setBackgroundColor(Color.GRAY);
+                        }
+                        FavButton.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                if (fav == true) {
+                                    fav = false;
+                                    v.setBackgroundColor(Color.GRAY);
+                                    // favListから削除
+                                    mFavList.remove(mFavList.indexOf(mQNum));
+                                } else {
+                                    fav = true;
+                                    v.setBackgroundColor(Color.YELLOW);
+                                    // favListに追加
+                                    if (mFavList == null) mFavList = new ArrayList<String>();
+                                    mFavList.add(mQNum);
 
+                                }
+                                // favList更新
+                                mDataBaseReference = FirebaseDatabase.getInstance().getReference();
+                                mAuth = FirebaseAuth.getInstance();
+                                FirebaseUser user = mAuth.getCurrentUser();
+                                DatabaseReference userRef = mDataBaseReference.child(Const.UsersPATH).child(user.getUid());
+                                Map<String, String> data = new HashMap<String, String>();
+                                String temp = "";
+                                for (int i = 0; i < mFavList.size(); i++) {
+                                    temp = temp + mFavList.get(i);
+                                    if (i != mFavList.size() - 1) temp = temp + ",";
+                                }
+
+                                data.put("favList", temp);
+                                userRef.setValue(data);
+                            }
+                        });
+
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError firebaseError) {
+                    }
+
+                });
+
+            }
+
+            setTitle(mQuestion.getTitle());
+
+            // ListViewの準備
+            mListView = (ListView) findViewById(R.id.listView);
+            mAdapter = new QuestionDetailListAdapter(this, mQuestion);
+            mListView.setAdapter(mAdapter);
+            mAdapter.notifyDataSetChanged();
+
+            FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+            fab.setOnClickListener(new View.OnClickListener() {
                 @Override
-                public void onCancelled(DatabaseError firebaseError) {
-                }
+                public void onClick(View view) {
+                    // ログイン済みのユーザーを取得する
+                    FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
+                    if (user == null) {
+                        // ログインしていなければログイン画面に遷移させる
+                        Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+                        startActivity(intent);
+                    } else {
+                        // Questionを渡して回答作成画面を起動する
+                        // --- ここから ---
+                        Intent intent = new Intent(getApplicationContext(), AnswerSendActivity.class);
+                        intent.putExtra("question", mQuestion);
+                        startActivity(intent);
+                        // --- ここまで ---
+                    }
+                }
             });
 
-        }
-
-        setTitle(mQuestion.getTitle());
-
-        // ListViewの準備
-        mListView = (ListView) findViewById(R.id.listView);
-        mAdapter = new QuestionDetailListAdapter(this, mQuestion);
-        mListView.setAdapter(mAdapter);
-        mAdapter.notifyDataSetChanged();
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // ログイン済みのユーザーを取得する
-                FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-
-                if (user == null) {
-                    // ログインしていなければログイン画面に遷移させる
-                    Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
-                    startActivity(intent);
-                } else {
-                    // Questionを渡して回答作成画面を起動する
-                    // --- ここから ---
-                    Intent intent = new Intent(getApplicationContext(), AnswerSendActivity.class);
-                    intent.putExtra("question", mQuestion);
-                    startActivity(intent);
-                    // --- ここまで ---
-                }
-            }
-        });
-
-        DatabaseReference dataBaseReference = FirebaseDatabase.getInstance().getReference();
-        mAnswerRef = dataBaseReference.child(Const.ContentsPATH).child(String.valueOf(mQuestion.getGenre())).child(mQuestion.getQuestionUid()).child(Const.AnswersPATH);
-        mAnswerRef.addChildEventListener(mEventListener);
+            DatabaseReference dataBaseReference = FirebaseDatabase.getInstance().getReference();
+            mAnswerRef = dataBaseReference.child(Const.ContentsPATH).child(String.valueOf(mQuestion.getGenre())).child(mQuestion.getQuestionUid()).child(Const.AnswersPATH);
+            mAnswerRef.addChildEventListener(mEventListener);
     }
 
     private boolean favCheck(ArrayList<String> favList, String QNum){
